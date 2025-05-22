@@ -1,0 +1,245 @@
+"use client";
+
+import { useState, useMemo, useEffect } from 'react';
+import type { DefectRecord, MonteCarloResult } from '@/types';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
+import { BarChart as LBarChart, Activity, HelpCircle } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+} from 'recharts';
+import { useToast } from "@/hooks/use-toast";
+
+interface MonteCarloCardProps {
+  data: DefectRecord[];
+}
+
+const NUM_SIMULATIONS = 10000; // As per requirement
+
+const reductionScenarios = [0, 0.1, 0.2, 0.3]; // 0%, 10%, 20%, 30% reduction
+
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const scenarioData = payload[0].payload; // Full data object for the bar
+    return (
+      <div className="bg-card p-2 border border-border rounded shadow-lg text-sm">
+        <p className="font-semibold">{scenarioData.scenario}</p>
+        <p>Mean Cost: ${scenarioData.meanCost?.toFixed(2)}</p>
+        <p>Std Dev: ${scenarioData.stdDevCost?.toFixed(2)}</p>
+        <p>P5 Cost: ${scenarioData.percentiles?.p5.toFixed(2)}</p>
+        <p>Median Cost: ${scenarioData.percentiles?.p50.toFixed(2)}</p>
+        <p>P95 Cost: ${scenarioData.percentiles?.p95.toFixed(2)}</p>
+        {typeof scenarioData.expectedSavings === 'number' && <p>Savings: ${scenarioData.expectedSavings.toFixed(2)}</p>}
+      </div>
+    );
+  }
+  return null;
+};
+
+
+export default function MonteCarloCard({ data }: MonteCarloCardProps) {
+  const [simulationResults, setSimulationResults] = useState<MonteCarloResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const { toast } = useToast();
+
+  const repairCosts = useMemo(() => data.map(d => d.repair_cost), [data]);
+
+  const runSimulation = async () => {
+    if (repairCosts.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "No Data",
+        description: "Cannot run simulation without imported defect data.",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    setSimulationResults([]);
+    setProgress(0);
+
+    const results: MonteCarloResult[] = [];
+    const totalSteps = reductionScenarios.length * NUM_SIMULATIONS;
+    let currentStep = 0;
+
+    // Simulate in chunks to update progress and avoid freezing browser
+    for (const reduction of reductionScenarios) {
+      const numDefectsToSample = Math.floor(repairCosts.length * (1 - reduction));
+      const scenarioTotalCosts: number[] = [];
+
+      for (let i = 0; i < NUM_SIMULATIONS; i++) {
+        let currentTotalCost = 0;
+        for (let j = 0; j < numDefectsToSample; j++) {
+          const randomIndex = Math.floor(Math.random() * repairCosts.length);
+          currentTotalCost += repairCosts[randomIndex];
+        }
+        scenarioTotalCosts.push(currentTotalCost);
+        
+        currentStep++;
+        if (i % (NUM_SIMULATIONS / 100) === 0) { // Update progress roughly every 1% of this scenario
+            setProgress(Math.round((currentStep / totalSteps) * 100));
+            await new Promise(resolve => setTimeout(resolve, 0)); // Yield to browser
+        }
+      }
+      
+      scenarioTotalCosts.sort((a, b) => a - b);
+      const meanCost = scenarioTotalCosts.reduce((sum, cost) => sum + cost, 0) / NUM_SIMULATIONS;
+      const stdDevCost = Math.sqrt(scenarioTotalCosts.reduce((sum, cost) => sum + Math.pow(cost - meanCost, 2), 0) / (NUM_SIMULATIONS -1));
+      
+      results.push({
+        scenario: `${reduction * 100}% Reduction`,
+        totalCosts: scenarioTotalCosts, // Storing all costs might be memory intensive for UI. Consider sampling for boxplot.
+        meanCost,
+        stdDevCost,
+        percentiles: {
+          p5: scenarioTotalCosts[Math.floor(NUM_SIMULATIONS * 0.05)],
+          p50: scenarioTotalCosts[Math.floor(NUM_SIMULATIONS * 0.50)],
+          p95: scenarioTotalCosts[Math.floor(NUM_SIMULATIONS * 0.95)],
+        },
+      });
+    }
+    
+    // Calculate expected savings based on 0% reduction scenario
+    const baselineMeanCost = results.find(r => r.scenario === "0% Reduction")?.meanCost;
+    if (baselineMeanCost) {
+      results.forEach(r => {
+        if (r.scenario !== "0% Reduction") {
+          r.expectedSavings = baselineMeanCost - r.meanCost;
+        }
+      });
+    }
+
+    setSimulationResults(results);
+    setIsLoading(false);
+    setProgress(100);
+    toast({
+      title: "Simulation Complete",
+      description: "Monte Carlo simulation finished for all scenarios.",
+    });
+  };
+  
+  // Data for comparative bar chart (Mean Costs)
+  const chartDataMean = simulationResults.map(r => ({
+    name: r.scenario,
+    "Mean Total Cost": r.meanCost,
+    ...r // Pass full data for tooltip
+  }));
+
+  // Data for comparative bar chart (Expected Savings)
+  const chartDataSavings = simulationResults
+    .filter(r => typeof r.expectedSavings === 'number')
+    .map(r => ({
+      name: r.scenario,
+      "Expected Savings": r.expectedSavings,
+      ...r // Pass full data for tooltip
+    }));
+
+
+  return (
+    <Card className="shadow-lg">
+      <CardHeader>
+        <CardTitle className="flex items-center"><Activity className="mr-2 h-6 w-6 text-primary" />Monte Carlo Simulation</CardTitle>
+        <CardDescription>
+          Simulate total repair costs under different defect reduction scenarios (0%, 10%, 20%, 30%). 
+          Each scenario runs {NUM_SIMULATIONS.toLocaleString()} simulations.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button onClick={runSimulation} disabled={isLoading || data.length === 0} className="mb-4">
+          {isLoading ? 'Running Simulation...' : 'Run Simulation'}
+        </Button>
+        {isLoading && <Progress value={progress} className="w-full mb-4" />}
+
+        {simulationResults.length > 0 && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-2 text-foreground">Simulation Results Summary</h3>
+               <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Scenario</TableHead>
+                      <TableHead className="text-right">Mean Cost</TableHead>
+                      <TableHead className="text-right">Std. Dev.</TableHead>
+                      <TableHead className="text-right">P5 Cost</TableHead>
+                      <TableHead className="text-right">Median Cost</TableHead>
+                      <TableHead className="text-right">P95 Cost</TableHead>
+                      <TableHead className="text-right">Expected Savings</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {simulationResults.map((res) => (
+                      <TableRow key={res.scenario}>
+                        <TableCell>{res.scenario}</TableCell>
+                        <TableCell className="text-right">${res.meanCost.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${res.stdDevCost.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${res.percentiles.p5.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${res.percentiles.p50.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${res.percentiles.p95.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">
+                          {typeof res.expectedSavings === 'number' ? `$${res.expectedSavings.toFixed(2)}` : 'N/A'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 flex items-center">
+                <HelpCircle className="h-3 w-3 mr-1" /> 
+                Comparative boxplots are represented by percentile data (P5, Median, P95).
+                Full distribution data (10,000 points per scenario) is available but not directly plotted for performance.
+              </p>
+            </div>
+            
+            {chartDataMean.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Mean Total Costs Comparison</h3>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartDataMean} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))"/>
+                      <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }}/>
+                      <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `$${value.toLocaleString()}`} tick={{ fontSize: 12 }}/>
+                      <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'hsla(var(--primary), 0.1)' }} />
+                      <Legend />
+                      <Bar dataKey="Mean Total Cost" fill="hsl(var(--primary))" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {chartDataSavings.length > 0 && (
+               <div>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Expected Savings Comparison</h3>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartDataSavings} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }}/>
+                      <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `$${value.toLocaleString()}`} tick={{ fontSize: 12 }}/>
+                      <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'hsla(var(--accent), 0.1)' }} />
+                      <Legend />
+                      <Bar dataKey="Expected Savings" fill="hsl(var(--accent))" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
