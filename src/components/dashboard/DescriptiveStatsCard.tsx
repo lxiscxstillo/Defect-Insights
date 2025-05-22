@@ -26,7 +26,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return (
       <div className="bg-card p-2 border border-border rounded shadow-lg">
         <p className="label text-sm font-medium">{`${label}`}</p>
-        <p className="intro text-sm text-foreground">{`Count : ${payload[0].value}`}</p>
+        <p className="intro text-sm text-foreground">{`Conteo : ${payload[0].value}`}</p>
       </div>
     );
   }
@@ -53,10 +53,10 @@ export default function DescriptiveStatsCard({ data }: DescriptiveStatsCardProps
     return (
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center"><TrendingUp className="mr-2 h-6 w-6 text-primary" />Descriptive Statistics</CardTitle>
+          <CardTitle className="flex items-center"><TrendingUp className="mr-2 h-6 w-6 text-primary" />Estadísticas Descriptivas</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">No data loaded to calculate statistics.</p>
+          <p className="text-muted-foreground">No hay datos cargados para calcular estadísticas.</p>
         </CardContent>
       </Card>
     );
@@ -65,33 +65,33 @@ export default function DescriptiveStatsCard({ data }: DescriptiveStatsCardProps
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <CardTitle className="flex items-center"><TrendingUp className="mr-2 h-6 w-6 text-primary" />Descriptive Statistics</CardTitle>
-        <CardDescription>Summary statistics and distributions for defect data, focusing on repair costs and categorical attributes.</CardDescription>
+        <CardTitle className="flex items-center"><TrendingUp className="mr-2 h-6 w-6 text-primary" />Estadísticas Descriptivas</CardTitle>
+        <CardDescription>Estadísticas de resumen y distribuciones para datos de defectos, enfocándose en costos de reparación y atributos categóricos.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
-          <h3 className="text-lg font-semibold mb-2 text-foreground">Repair Cost Statistics</h3>
+          <h3 className="text-lg font-semibold mb-2 text-foreground">Estadísticas de Costo de Reparación</h3>
           {stats ? (
             <Table>
               <TableBody>
-                <TableRow><TableCell>Mean</TableCell><TableCell className="text-right">${stats.mean.toFixed(2)}</TableCell></TableRow>
-                <TableRow><TableCell>Median</TableCell><TableCell className="text-right">${stats.median.toFixed(2)}</TableCell></TableRow>
-                <TableRow><TableCell>Mode</TableCell><TableCell className="text-right">{Array.isArray(stats.mode) ? stats.mode.join(', ') : stats.mode ?? 'N/A'}</TableCell></TableRow>
-                <TableRow><TableCell>Std. Deviation</TableCell><TableCell className="text-right">${stats.stdDev.toFixed(2)}</TableCell></TableRow>
-                <TableRow><TableCell>Variance</TableCell><TableCell className="text-right">${stats.variance.toFixed(2)}</TableCell></TableRow>
-                <TableRow><TableCell>Min</TableCell><TableCell className="text-right">${stats.min.toFixed(2)}</TableCell></TableRow>
-                <TableRow><TableCell>Max</TableCell><TableCell className="text-right">${stats.max.toFixed(2)}</TableCell></TableRow>
-                <TableRow><TableCell>Range</TableCell><TableCell className="text-right">${stats.range.toFixed(2)}</TableCell></TableRow>
-                <TableRow><TableCell>Q1 (25th Pctl)</TableCell><TableCell className="text-right">${stats.q1.toFixed(2)}</TableCell></TableRow>
-                <TableRow><TableCell>Q3 (75th Pctl)</TableCell><TableCell className="text-right">${stats.q3.toFixed(2)}</TableCell></TableRow>
+                <TableRow><TableCell>Media</TableCell><TableCell className="text-right">${stats.mean.toFixed(2)}</TableCell></TableRow>
+                <TableRow><TableCell>Mediana</TableCell><TableCell className="text-right">${stats.median.toFixed(2)}</TableCell></TableRow>
+                <TableRow><TableCell>Moda</TableCell><TableCell className="text-right">{Array.isArray(stats.mode) ? stats.mode.join(', ') : (stats.mode ?? 'N/D')}</TableCell></TableRow>
+                <TableRow><TableCell>Desv. Estándar</TableCell><TableCell className="text-right">${stats.stdDev.toFixed(2)}</TableCell></TableRow>
+                <TableRow><TableCell>Varianza</TableCell><TableCell className="text-right">${stats.variance.toFixed(2)}</TableCell></TableRow>
+                <TableRow><TableCell>Mín</TableCell><TableCell className="text-right">${stats.min.toFixed(2)}</TableCell></TableRow>
+                <TableRow><TableCell>Máx</TableCell><TableCell className="text-right">${stats.max.toFixed(2)}</TableCell></TableRow>
+                <TableRow><TableCell>Rango</TableCell><TableCell className="text-right">${stats.range.toFixed(2)}</TableCell></TableRow>
+                <TableRow><TableCell>Q1 (Percentil 25)</TableCell><TableCell className="text-right">${stats.q1.toFixed(2)}</TableCell></TableRow>
+                <TableRow><TableCell>Q3 (Percentil 75)</TableCell><TableCell className="text-right">${stats.q3.toFixed(2)}</TableCell></TableRow>
                 <TableRow><TableCell>IQR</TableCell><TableCell className="text-right">${stats.iqr.toFixed(2)}</TableCell></TableRow>
               </TableBody>
             </Table>
-          ) : <p>No repair cost data available.</p>}
+          ) : <p>No hay datos de costos de reparación disponibles.</p>}
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold mb-2 text-foreground">Repair Cost Distribution (Histogram)</h3>
+          <h3 className="text-lg font-semibold mb-2 text-foreground">Distribución de Costos de Reparación (Histograma)</h3>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={histogramData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
@@ -99,18 +99,18 @@ export default function DescriptiveStatsCard({ data }: DescriptiveStatsCardProps
                 <XAxis dataKey="bin" angle={-30} textAnchor="end" height={70} stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }} />
                 <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }}/>
                 <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'hsla(var(--primary), 0.1)' }} />
-                <Bar dataKey="count" fill="hsl(var(--primary))" name="Frequency" />
+                <Bar dataKey="count" fill="hsl(var(--primary))" name="Frecuencia" />
               </BarChart>
             </ResponsiveContainer>
           </div>
-           <p className="text-xs text-muted-foreground text-center mt-1">Note: Boxplot visualization for Repair Cost is represented numerically (Q1, Median, Q3, Min, Max) above.</p>
+           <p className="text-xs text-muted-foreground text-center mt-1">Nota: La visualización de diagrama de caja para el Costo de Reparación se representa numéricamente (Q1, Mediana, Q3, Mín, Máx) arriba.</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FrequencyChart title="Defect Types" data={formatFrequencyDataForChart(defectTypeFreq)} icon={<ListChecks className="mr-2 h-5 w-5 text-accent" />} />
-          <FrequencyChart title="Severity Levels" data={formatFrequencyDataForChart(severityFreq)} icon={<LPieChart className="mr-2 h-5 w-5 text-accent" />} />
-          <FrequencyChart title="Defect Locations" data={formatFrequencyDataForChart(locationFreq)} icon={<LLineChart className="mr-2 h-5 w-5 text-accent" />} />
-          <FrequencyChart title="Inspection Methods" data={formatFrequencyDataForChart(inspectionFreq)} icon={<LBarChart className="mr-2 h-5 w-5 text-accent" />} />
+          <FrequencyChart title="Tipos de Defecto" data={formatFrequencyDataForChart(defectTypeFreq)} icon={<ListChecks className="mr-2 h-5 w-5 text-accent" />} />
+          <FrequencyChart title="Niveles de Severidad" data={formatFrequencyDataForChart(severityFreq)} icon={<LPieChart className="mr-2 h-5 w-5 text-accent" />} />
+          <FrequencyChart title="Ubicaciones de Defectos" data={formatFrequencyDataForChart(locationFreq)} icon={<LLineChart className="mr-2 h-5 w-5 text-accent" />} />
+          <FrequencyChart title="Métodos de Inspección" data={formatFrequencyDataForChart(inspectionFreq)} icon={<LBarChart className="mr-2 h-5 w-5 text-accent" />} />
         </div>
       </CardContent>
     </Card>
@@ -137,11 +137,11 @@ function FrequencyChart({ title, data, icon }: FrequencyChartProps) {
               <XAxis type="number" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
               <YAxis dataKey="name" type="category" width={100} stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10, width: 95 }} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} />
               <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'hsla(var(--accent), 0.1)' }} />
-              <Bar dataKey="count" fill="hsl(var(--accent))" name="Frequency" barSize={20}/>
+              <Bar dataKey="count" fill="hsl(var(--accent))" name="Frecuencia" barSize={20}/>
             </BarChart>
           </ResponsiveContainer>
         </div>
-      ) : <p className="text-muted-foreground text-sm">No data for {title}.</p>}
+      ) : <p className="text-muted-foreground text-sm">No hay datos para {title}.</p>}
     </div>
   );
 }

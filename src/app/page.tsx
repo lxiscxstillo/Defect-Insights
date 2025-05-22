@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo } from 'react';
@@ -19,27 +20,27 @@ export default function HomePage() {
   // Generate a simple summary for AI card when data is loaded.
   const analysisSummaryForAI = useMemo(() => {
     if (defectData.length === 0) {
-      return "No data loaded yet. Please upload manufacturing defect data to perform analysis.";
+      return "No hay datos cargados todavía. Por favor, cargue datos de defectos de fabricación para realizar el análisis.";
     }
     const repairCosts = defectData.map(d => d.repair_cost);
     const stats = calculateDescriptiveStats(repairCosts);
     
-    let summary = `Analysis of ${defectData.length} defect records:\n`;
+    let summary = `Análisis de ${defectData.length} registros de defectos:\n`;
     if (stats) {
-      summary += `- Repair Costs: Mean $${stats.mean.toFixed(2)}, Median $${stats.median.toFixed(2)}, StdDev $${stats.stdDev.toFixed(2)}. Range from $${stats.min.toFixed(2)} to $${stats.max.toFixed(2)}.\n`;
+      summary += `- Costos de Reparación: Media $${stats.mean.toFixed(2)}, Mediana $${stats.median.toFixed(2)}, Desv. Est. $${stats.stdDev.toFixed(2)}. Rango de $${stats.min.toFixed(2)} a $${stats.max.toFixed(2)}.\n`;
     } else {
-      summary += "- Repair cost statistics could not be calculated.\n";
+      summary += "- No se pudieron calcular las estadísticas de costos de reparación.\n";
     }
     
     const defectTypes = new Set(defectData.map(d => d.defect_type));
-    summary += `- Observed ${defectTypes.size} unique defect types.\n`;
+    summary += `- Se observaron ${defectTypes.size} tipos de defectos únicos.\n`;
 
     const severities = new Set(defectData.map(d => d.severity));
-    summary += `- Observed ${severities.size} unique severity levels.\n`;
+    summary += `- Se observaron ${severities.size} niveles de severidad únicos.\n`;
     
     // You can add more details here based on frequency distributions etc.
     // For brevity, keeping it simple.
-    summary += "\nPlease provide more detailed findings or specific areas of concern for targeted AI suggestions.";
+    summary += "\nPor favor, proporcione hallazgos más detallados o áreas específicas de preocupación para sugerencias de IA específicas.";
     
     return summary;
   }, [defectData]);
@@ -62,7 +63,7 @@ export default function HomePage() {
         </div>
       </main>
       <footer className="text-center p-4 text-sm text-muted-foreground border-t">
-        Defect Insights &copy; {new Date().getFullYear()}
+        Análisis de Defectos &copy; {new Date().getFullYear()}
       </footer>
     </div>
   );

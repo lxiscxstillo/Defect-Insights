@@ -34,12 +34,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return (
       <div className="bg-card p-2 border border-border rounded shadow-lg text-sm">
         <p className="font-semibold">{scenarioData.scenario}</p>
-        <p>Mean Cost: ${scenarioData.meanCost?.toFixed(2)}</p>
-        <p>Std Dev: ${scenarioData.stdDevCost?.toFixed(2)}</p>
-        <p>P5 Cost: ${scenarioData.percentiles?.p5.toFixed(2)}</p>
-        <p>Median Cost: ${scenarioData.percentiles?.p50.toFixed(2)}</p>
-        <p>P95 Cost: ${scenarioData.percentiles?.p95.toFixed(2)}</p>
-        {typeof scenarioData.expectedSavings === 'number' && <p>Savings: ${scenarioData.expectedSavings.toFixed(2)}</p>}
+        <p>Costo Medio: ${scenarioData.meanCost?.toFixed(2)}</p>
+        <p>Desv. Est.: ${scenarioData.stdDevCost?.toFixed(2)}</p>
+        <p>Costo P5: ${scenarioData.percentiles?.p5.toFixed(2)}</p>
+        <p>Costo Mediana: ${scenarioData.percentiles?.p50.toFixed(2)}</p>
+        <p>Costo P95: ${scenarioData.percentiles?.p95.toFixed(2)}</p>
+        {typeof scenarioData.expectedSavings === 'number' && <p>Ahorros: ${scenarioData.expectedSavings.toFixed(2)}</p>}
       </div>
     );
   }
@@ -56,7 +56,12 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
 
   useEffect(() => {
     // This will only run on the client, after initial hydration
-    setFormattedNumSimulations(NUM_SIMULATIONS.toLocaleString());
+    // Attempt to format with Spanish locale if available, otherwise default.
+    try {
+        setFormattedNumSimulations(NUM_SIMULATIONS.toLocaleString('es-ES'));
+    } catch (e) {
+        setFormattedNumSimulations(NUM_SIMULATIONS.toLocaleString());
+    }
   }, []);
 
   const repairCosts = useMemo(() => data.map(d => d.repair_cost), [data]);
@@ -65,8 +70,8 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
     if (repairCosts.length === 0) {
       toast({
         variant: "destructive",
-        title: "No Data",
-        description: "Cannot run simulation without imported defect data.",
+        title: "Sin Datos",
+        description: "No se puede ejecutar la simulación sin datos de defectos importados.",
       });
       return;
     }
@@ -104,7 +109,7 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
       const stdDevCost = Math.sqrt(scenarioTotalCosts.reduce((sum, cost) => sum + Math.pow(cost - meanCost, 2), 0) / (NUM_SIMULATIONS -1));
       
       results.push({
-        scenario: `${reduction * 100}% Reduction`,
+        scenario: `${reduction * 100}% Reducción`,
         totalCosts: scenarioTotalCosts, // Storing all costs might be memory intensive for UI. Consider sampling for boxplot.
         meanCost,
         stdDevCost,
@@ -117,10 +122,10 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
     }
     
     // Calculate expected savings based on 0% reduction scenario
-    const baselineMeanCost = results.find(r => r.scenario === "0% Reduction")?.meanCost;
+    const baselineMeanCost = results.find(r => r.scenario === "0% Reducción")?.meanCost;
     if (baselineMeanCost) {
       results.forEach(r => {
-        if (r.scenario !== "0% Reduction") {
+        if (r.scenario !== "0% Reducción") {
           r.expectedSavings = baselineMeanCost - r.meanCost;
         }
       });
@@ -130,15 +135,15 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
     setIsLoading(false);
     setProgress(100);
     toast({
-      title: "Simulation Complete",
-      description: "Monte Carlo simulation finished for all scenarios.",
+      title: "Simulación Completa",
+      description: "La simulación de Monte Carlo finalizó para todos los escenarios.",
     });
   };
   
   // Data for comparative bar chart (Mean Costs)
   const chartDataMean = simulationResults.map(r => ({
     name: r.scenario,
-    "Mean Total Cost": r.meanCost,
+    "Costo Total Medio": r.meanCost,
     ...r // Pass full data for tooltip
   }));
 
@@ -147,7 +152,7 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
     .filter(r => typeof r.expectedSavings === 'number')
     .map(r => ({
       name: r.scenario,
-      "Expected Savings": r.expectedSavings,
+      "Ahorros Esperados": r.expectedSavings,
       ...r // Pass full data for tooltip
     }));
 
@@ -155,33 +160,33 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <CardTitle className="flex items-center"><Activity className="mr-2 h-6 w-6 text-primary" />Monte Carlo Simulation</CardTitle>
+        <CardTitle className="flex items-center"><Activity className="mr-2 h-6 w-6 text-primary" />Simulación de Monte Carlo</CardTitle>
         <CardDescription>
-          Simulate total repair costs under different defect reduction scenarios (0%, 10%, 20%, 30%). 
-          Each scenario runs {formattedNumSimulations} simulations.
+          Simule los costos totales de reparación bajo diferentes escenarios de reducción de defectos (0%, 10%, 20%, 30%). 
+          Cada escenario ejecuta {formattedNumSimulations} simulaciones.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Button onClick={runSimulation} disabled={isLoading || data.length === 0} className="mb-4">
-          {isLoading ? 'Running Simulation...' : 'Run Simulation'}
+          {isLoading ? 'Ejecutando Simulación...' : 'Ejecutar Simulación'}
         </Button>
         {isLoading && <Progress value={progress} className="w-full mb-4" />}
 
         {simulationResults.length > 0 && (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold mb-2 text-foreground">Simulation Results Summary</h3>
+              <h3 className="text-lg font-semibold mb-2 text-foreground">Resumen de Resultados de Simulación</h3>
                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Scenario</TableHead>
-                      <TableHead className="text-right">Mean Cost</TableHead>
-                      <TableHead className="text-right">Std. Dev.</TableHead>
-                      <TableHead className="text-right">P5 Cost</TableHead>
-                      <TableHead className="text-right">Median Cost</TableHead>
-                      <TableHead className="text-right">P95 Cost</TableHead>
-                      <TableHead className="text-right">Expected Savings</TableHead>
+                      <TableHead>Escenario</TableHead>
+                      <TableHead className="text-right">Costo Medio</TableHead>
+                      <TableHead className="text-right">Desv. Est.</TableHead>
+                      <TableHead className="text-right">Costo P5</TableHead>
+                      <TableHead className="text-right">Costo Mediana</TableHead>
+                      <TableHead className="text-right">Costo P95</TableHead>
+                      <TableHead className="text-right">Ahorros Esperados</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -194,7 +199,7 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
                         <TableCell className="text-right">${res.percentiles.p50.toFixed(2)}</TableCell>
                         <TableCell className="text-right">${res.percentiles.p95.toFixed(2)}</TableCell>
                         <TableCell className="text-right">
-                          {typeof res.expectedSavings === 'number' ? `$${res.expectedSavings.toFixed(2)}` : 'N/A'}
+                          {typeof res.expectedSavings === 'number' ? `$${res.expectedSavings.toFixed(2)}` : 'N/D'}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -203,23 +208,23 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
               </div>
               <p className="text-xs text-muted-foreground mt-2 flex items-center">
                 <HelpCircle className="h-3 w-3 mr-1" /> 
-                Comparative boxplots are represented by percentile data (P5, Median, P95).
-                Full distribution data (10,000 points per scenario) is available but not directly plotted for performance.
+                Los diagramas de caja comparativos se representan mediante datos percentiles (P5, Mediana, P95).
+                Los datos de distribución completa (10,000 puntos por escenario) están disponibles pero no se grafican directamente por rendimiento.
               </p>
             </div>
             
             {chartDataMean.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold mb-2 text-foreground">Mean Total Costs Comparison</h3>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Comparación de Costos Totales Medios</h3>
                 <div className="h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartDataMean} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))"/>
                       <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }}/>
-                      <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `$${value.toLocaleString()}`} tick={{ fontSize: 12 }}/>
+                      <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `$${value.toLocaleString('es-ES')}`} tick={{ fontSize: 12 }}/>
                       <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'hsla(var(--primary), 0.1)' }} />
                       <Legend />
-                      <Bar dataKey="Mean Total Cost" fill="hsl(var(--primary))" />
+                      <Bar dataKey="Costo Total Medio" fill="hsl(var(--primary))" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -228,16 +233,16 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
 
             {chartDataSavings.length > 0 && (
                <div>
-                <h3 className="text-lg font-semibold mb-2 text-foreground">Expected Savings Comparison</h3>
+                <h3 className="text-lg font-semibold mb-2 text-foreground">Comparación de Ahorros Esperados</h3>
                 <div className="h-[300px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chartDataSavings} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }}/>
-                      <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `$${value.toLocaleString()}`} tick={{ fontSize: 12 }}/>
+                      <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `$${value.toLocaleString('es-ES')}`} tick={{ fontSize: 12 }}/>
                       <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'hsla(var(--accent), 0.1)' }} />
                       <Legend />
-                      <Bar dataKey="Expected Savings" fill="hsl(var(--accent))" />
+                      <Bar dataKey="Ahorros Esperados" fill="hsl(var(--accent))" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -250,4 +255,3 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
     </Card>
   );
 }
-

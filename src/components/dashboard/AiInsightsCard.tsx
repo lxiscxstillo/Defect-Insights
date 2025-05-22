@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // useEffect added for initialAnalysisSummary update
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,8 +25,8 @@ export default function AiInsightsCard({ initialAnalysisSummary = "" }: AiInsigh
     if (!analysisInput.trim()) {
       toast({
         variant: "destructive",
-        title: "Input Required",
-        description: "Please provide a summary of statistical analysis.",
+        title: "Entrada Requerida",
+        description: "Por favor, proporcione un resumen del análisis estadístico.",
       });
       return;
     }
@@ -41,44 +41,41 @@ export default function AiInsightsCard({ initialAnalysisSummary = "" }: AiInsigh
       });
       setAiSuggestions(result.suggestions);
       toast({
-        title: "AI Insights Generated",
-        description: "Suggestions for defect reduction are ready.",
+        title: "Perspectivas de IA Generadas",
+        description: "Las sugerencias para la reducción de defectos están listas.",
       });
     } catch (err) {
-      console.error("AI Insights Error:", err);
-      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
-      setError(`Failed to generate AI insights: ${errorMessage}`);
+      console.error("Error de Perspectivas de IA:", err);
+      const errorMessage = err instanceof Error ? err.message : "Ocurrió un error desconocido.";
+      setError(`Error al generar perspectivas de IA: ${errorMessage}`);
       toast({
         variant: "destructive",
-        title: "AI Error",
-        description: `Could not fetch suggestions. ${errorMessage}`,
+        title: "Error de IA",
+        description: `No se pudieron obtener sugerencias. ${errorMessage}`,
       });
     } finally {
       setIsLoading(false);
     }
   };
   
-  // Effect to update analysisInput if initialAnalysisSummary changes and is not empty
-  // This is useful if the parent component dynamically provides a summary
-  useState(() => {
+  useEffect(() => {
     if (initialAnalysisSummary && initialAnalysisSummary.trim() !== "") {
       setAnalysisInput(initialAnalysisSummary);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialAnalysisSummary]);
 
 
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <CardTitle className="flex items-center"><BrainCircuit className="mr-2 h-6 w-6 text-primary" />AI-Driven Insights</CardTitle>
+        <CardTitle className="flex items-center"><BrainCircuit className="mr-2 h-6 w-6 text-primary" />Perspectivas Impulsadas por IA</CardTitle>
         <CardDescription>
-          Enter a summary of your statistical analysis below. The AI will suggest potential defect reduction strategies and process improvements based on your input.
+          Ingrese un resumen de su análisis estadístico a continuación. La IA sugerirá posibles estrategias de reducción de defectos y mejoras de procesos basadas en su entrada.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Textarea
-          placeholder="Paste or type your statistical analysis summary here. For example: 'High repair costs are strongly correlated with defect type X. Severity level Y also shows significantly higher costs...'"
+          placeholder="Pegue o escriba aquí su resumen de análisis estadístico. Por ejemplo: 'Los altos costos de reparación están fuertemente correlacionados con el tipo de defecto X. El nivel de severidad Y también muestra costos significativamente más altos...'"
           value={analysisInput}
           onChange={(e) => setAnalysisInput(e.target.value)}
           rows={8}
@@ -86,7 +83,7 @@ export default function AiInsightsCard({ initialAnalysisSummary = "" }: AiInsigh
           disabled={isLoading}
         />
         <Button onClick={handleSubmit} disabled={isLoading || !analysisInput.trim()}>
-          {isLoading ? 'Generating Insights...' : 'Get AI Suggestions'}
+          {isLoading ? 'Generando Perspectivas...' : 'Obtener Sugerencias de IA'}
         </Button>
 
         {error && (
@@ -101,7 +98,7 @@ export default function AiInsightsCard({ initialAnalysisSummary = "" }: AiInsigh
           <div className="mt-6 p-4 border rounded-md bg-secondary/30">
             <h3 className="text-lg font-semibold mb-2 flex items-center text-foreground">
               <Lightbulb className="mr-2 h-5 w-5 text-accent" />
-              Suggested Strategies
+              Estrategias Sugeridas
             </h3>
             <div className="whitespace-pre-wrap text-sm text-foreground/90">{aiSuggestions}</div>
           </div>
@@ -109,7 +106,7 @@ export default function AiInsightsCard({ initialAnalysisSummary = "" }: AiInsigh
       </CardContent>
       <CardFooter>
          <p className="text-xs text-muted-foreground">
-            AI suggestions are based on the provided summary and general manufacturing knowledge. Always validate with domain experts.
+            Las sugerencias de IA se basan en el resumen proporcionado y el conocimiento general de fabricación. Siempre valide con expertos en el dominio.
           </p>
       </CardFooter>
     </Card>
@@ -135,4 +132,3 @@ const AlertTriangle = (props: React.SVGProps<SVGSVGElement>) => (
     <line x1="12" y1="17" x2="12.01" y2="17" />
   </svg>
 );
-

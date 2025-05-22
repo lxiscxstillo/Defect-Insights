@@ -20,7 +20,7 @@ interface DataImportCardProps {
 // For production, a robust library like PapaParse is recommended.
 function parseCSV(csvText: string): { records: DefectRecord[], error?: string } {
   const lines = csvText.trim().split(/\r?\n/);
-  if (lines.length < 2) return { records: [], error: "CSV must have a header and at least one data row." };
+  if (lines.length < 2) return { records: [], error: "El CSV debe tener un encabezado y al menos una fila de datos." };
 
   const headerLine = lines[0];
   const dataLines = lines.slice(1);
@@ -38,18 +38,18 @@ function parseCSV(csvText: string): { records: DefectRecord[], error?: string } 
   
   const headers = headerLine.split(',').map(h => h.trim());
   
-  const defectTypeIndex = getHeaderIndex(headers, "Defect Type", ["defect_type"]);
-  const severityIndex = getHeaderIndex(headers, "Severity", ["severity"]);
-  const defectLocationIndex = getHeaderIndex(headers, "Location", ["defect_location"]);
-  const inspectionMethodIndex = getHeaderIndex(headers, "Inspection Method", ["inspection_method"]);
-  const repairCostIndex = getHeaderIndex(headers, "Repair Cost ($)", ["repair_cost", "repair cost"]);
+  const defectTypeIndex = getHeaderIndex(headers, "Tipo de Defecto", ["defect_type", "defect type"]);
+  const severityIndex = getHeaderIndex(headers, "Severidad", ["severity"]);
+  const defectLocationIndex = getHeaderIndex(headers, "Ubicación", ["defect_location", "location"]);
+  const inspectionMethodIndex = getHeaderIndex(headers, "Método de Inspección", ["inspection_method", "inspection method"]);
+  const repairCostIndex = getHeaderIndex(headers, "Costo de Reparación ($)", ["repair_cost", "repair cost"]);
 
   const requiredHeaderMappings = {
-    "Defect Type": defectTypeIndex,
-    "Severity": severityIndex,
-    "Location": defectLocationIndex,
-    "Inspection Method": inspectionMethodIndex,
-    "Repair Cost ($)": repairCostIndex,
+    "Tipo de Defecto": defectTypeIndex,
+    "Severidad": severityIndex,
+    "Ubicación": defectLocationIndex,
+    "Método de Inspección": inspectionMethodIndex,
+    "Costo de Reparación ($)": repairCostIndex,
   };
 
   const missingHeaders = Object.entries(requiredHeaderMappings)
@@ -57,7 +57,7 @@ function parseCSV(csvText: string): { records: DefectRecord[], error?: string } 
     .map(([key]) => key);
 
   if (missingHeaders.length > 0) {
-    return { records: [], error: `Missing required CSV headers: ${missingHeaders.join(', ')}. Please ensure your CSV has columns: "Defect Type", "Severity", "Location", "Inspection Method", "Repair Cost ($)".` };
+    return { records: [], error: `Faltan encabezados CSV requeridos: ${missingHeaders.join(', ')}. Asegúrese de que su CSV tenga las columnas: "Tipo de Defecto", "Severidad", "Ubicación", "Método de Inspección", "Costo de Reparación ($)".` };
   }
 
   const records: DefectRecord[] = [];
@@ -71,7 +71,7 @@ function parseCSV(csvText: string): { records: DefectRecord[], error?: string } 
         const repairCost = parseFloat(repairCostString);
 
         if (isNaN(repairCost)) {
-          parseErrors.push(`Row ${index + 2}: Invalid repair cost value '${repairCostString}'.`);
+          parseErrors.push(`Fila ${index + 2}: Valor de costo de reparación inválido '${repairCostString}'.`);
           return; 
         }
 
@@ -85,18 +85,18 @@ function parseCSV(csvText: string): { records: DefectRecord[], error?: string } 
         };
         records.push(record);
       } catch (e) {
-        parseErrors.push(`Row ${index + 2}: Error parsing data.`);
+        parseErrors.push(`Fila ${index + 2}: Error al analizar los datos.`);
       }
     } else {
-       parseErrors.push(`Row ${index + 2}: Incorrect number of columns. Expected ${headers.length}, got ${values.length}.`);
+       parseErrors.push(`Fila ${index + 2}: Número incorrecto de columnas. Se esperaban ${headers.length}, se obtuvieron ${values.length}.`);
     }
   });
 
   if (parseErrors.length > 0 && records.length === 0) { // If all rows failed and no records parsed
-    return { records: [], error: `Failed to parse any data rows. First error: ${parseErrors[0]}` };
+    return { records: [], error: `No se pudieron analizar filas de datos. Primer error: ${parseErrors[0]}` };
   }
   if (parseErrors.length > 0 && records.length > 0) { // Some rows parsed, some failed
-     return { records, error: `Successfully parsed ${records.length} records, but ${parseErrors.length} rows had errors. First error: ${parseErrors[0]}` };
+     return { records, error: `Se analizaron ${records.length} registros correctamente, pero ${parseErrors.length} filas tuvieron errores. Primer error: ${parseErrors[0]}` };
   }
 
   return { records };
@@ -121,7 +121,7 @@ export default function DataImportCard({ onDataLoaded }: DataImportCardProps) {
         if (error && records.length === 0) {
           toast({
             variant: "destructive",
-            title: "CSV Parsing Error",
+            title: "Error de Análisis CSV",
             description: error,
           });
           setImportedData([]);
@@ -130,19 +130,19 @@ export default function DataImportCard({ onDataLoaded }: DataImportCardProps) {
           if (error && records.length > 0) {
              toast({
               variant: "default", // Use default for partial success
-              title: "Partial CSV Parse",
+              title: "Análisis CSV Parcial",
               description: error,
             });
           } else if (records.length > 0) {
              toast({
-              title: "Data Loaded",
-              description: `${records.length} records imported successfully from ${file.name}.`,
+              title: "Datos Cargados",
+              description: `${records.length} registros importados correctamente desde ${file.name}.`,
             });
           } else {
              toast({
               variant: "destructive",
-              title: "No Data Parsed",
-              description: "No valid records found in the CSV file.",
+              title: "No se Analizaron Datos",
+              description: "No se encontraron registros válidos en el archivo CSV.",
             });
           }
           setImportedData(records);
@@ -153,8 +153,8 @@ export default function DataImportCard({ onDataLoaded }: DataImportCardProps) {
       reader.onerror = () => {
         toast({
           variant: "destructive",
-          title: "File Read Error",
-          description: "Could not read the selected file.",
+          title: "Error de Lectura de Archivo",
+          description: "No se pudo leer el archivo seleccionado.",
         });
         setIsLoading(false);
       };
@@ -167,10 +167,10 @@ export default function DataImportCard({ onDataLoaded }: DataImportCardProps) {
       <CardHeader>
         <CardTitle className="flex items-center">
           <UploadCloud className="mr-2 h-6 w-6 text-primary" />
-          Import Defect Data (CSV)
+          Importar Datos de Defectos (CSV)
         </CardTitle>
         <CardDescription>
-          Upload your manufacturing defect data in CSV format. Ensure headers are: Defect Type, Severity, Location, Inspection Method, Repair Cost ($).
+          Cargue sus datos de defectos de fabricación en formato CSV. Asegúrese de que los encabezados sean: Tipo de Defecto, Severidad, Ubicación, Método de Inspección, Costo de Reparación ($).
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -182,15 +182,15 @@ export default function DataImportCard({ onDataLoaded }: DataImportCardProps) {
             className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
             disabled={isLoading}
           />
-          {fileName && <p className="text-sm text-muted-foreground mt-2">Loaded: {fileName}</p>}
+          {fileName && <p className="text-sm text-muted-foreground mt-2">Cargado: {fileName}</p>}
         </div>
-        {isLoading && <p>Loading and parsing data...</p>}
+        {isLoading && <p>Cargando y analizando datos...</p>}
         
         {!isLoading && importedData.length === 0 && (
           <div className="text-center text-muted-foreground py-8">
             <AlertTriangle className="mx-auto h-12 w-12 mb-2" />
-            <p>No data loaded yet. Please upload a CSV file.</p>
-            <p className="text-xs mt-1">The parser is basic and expects comma-separated values without commas inside quoted fields.</p>
+            <p>No hay datos cargados todavía. Por favor, cargue un archivo CSV.</p>
+            <p className="text-xs mt-1">El analizador es básico y espera valores separados por comas sin comas dentro de campos entrecomillados.</p>
           </div>
         )}
 
@@ -199,11 +199,11 @@ export default function DataImportCard({ onDataLoaded }: DataImportCardProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Defect Type</TableHead>
-                  <TableHead>Severity</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Inspection</TableHead>
-                  <TableHead className="text-right">Repair Cost</TableHead>
+                  <TableHead>Tipo de Defecto</TableHead>
+                  <TableHead>Severidad</TableHead>
+                  <TableHead>Ubicación</TableHead>
+                  <TableHead>Inspección</TableHead>
+                  <TableHead className="text-right">Costo de Reparación</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -218,7 +218,7 @@ export default function DataImportCard({ onDataLoaded }: DataImportCardProps) {
                 ))}
               </TableBody>
             </Table>
-            {importedData.length > 100 && <p className="text-sm text-muted-foreground p-2">Showing first 100 records. Total records: {importedData.length}</p>}
+            {importedData.length > 100 && <p className="text-sm text-muted-foreground p-2">Mostrando los primeros 100 registros. Registros totales: {importedData.length}</p>}
           </ScrollArea>
         )}
       </CardContent>

@@ -25,7 +25,8 @@ export function calculateMode(data: (string | number)[]): (string | number)[] | 
 
   const modes = Object.keys(frequency).filter(key => frequency[key] === maxFreq);
   if (modes.length === data.length) return null; // All values are unique or equally frequent
-  if (modes.length === 1) return modes[0]; // Can be number or string, ensure type consistency if needed
+  if (modes.length === 1 && modes[0] === "N/A") return "N/D"; // Handle case where "N/A" might be the mode
+  if (modes.length === 1) return isNaN(Number(modes[0])) ? modes[0] : Number(modes[0]);
   
   // Attempt to convert to number if possible
   return modes.map(m => (isNaN(Number(m)) ? m : Number(m)));
@@ -72,12 +73,13 @@ export function calculateQuartiles(data: number[]): { q1: number; q3: number; iq
 
 export function calculateDescriptiveStats(data: number[]): NumericalStats | null {
   if (data.length === 0) return null;
+  const modeValue = calculateMode(data);
   const minMax = calculateMinMaxRange(data);
   const quartiles = calculateQuartiles(data);
   return {
     mean: calculateMean(data),
     median: calculateMedian(data),
-    mode: calculateMode(data),
+    mode: modeValue === "N/A" ? "N/D" : modeValue, // Ensure "N/A" from mode becomes "N/D"
     stdDev: calculateStdDev(data),
     variance: calculateVariance(data),
     min: minMax.min,

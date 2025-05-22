@@ -30,10 +30,10 @@ const defectReductionStrategiesPrompt = ai.definePrompt({
   name: 'defectReductionStrategiesPrompt',
   input: {schema: DefectReductionStrategiesInputSchema},
   output: {schema: DefectReductionStrategiesOutputSchema},
-  prompt: `You are an expert manufacturing engineer with extensive experience in defect reduction.
-  Based on the statistical analysis provided, suggest potential defect reduction strategies and process improvements.
-  Statistical Analysis: {{{statisticalAnalysis}}}
-  Provide clear and actionable suggestions to reduce manufacturing costs and improve product quality.
+  prompt: `Eres un ingeniero de fabricación experto con amplia experiencia en la reducción de defectos.
+  Basándote en el análisis estadístico proporcionado, sugiere posibles estrategias de reducción de defectos y mejoras en los procesos.
+  Análisis Estadístico: {{{statisticalAnalysis}}}
+  Proporciona sugerencias claras y accionables para reducir los costos de fabricación y mejorar la calidad del producto.
 `,
 });
 
