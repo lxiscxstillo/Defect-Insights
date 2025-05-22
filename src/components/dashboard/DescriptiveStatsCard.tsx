@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { DefectRecord, NumericalStats, FrequencyDistribution } from '@/types';
@@ -76,7 +77,7 @@ export default function DescriptiveStatsCard({ data }: DescriptiveStatsCardProps
               <TableBody>
                 <TableRow><TableCell>Media</TableCell><TableCell className="text-right">${stats.mean.toFixed(2)}</TableCell></TableRow>
                 <TableRow><TableCell>Mediana</TableCell><TableCell className="text-right">${stats.median.toFixed(2)}</TableCell></TableRow>
-                <TableRow><TableCell>Moda</TableCell><TableCell className="text-right">{Array.isArray(stats.mode) ? stats.mode.join(', ') : (stats.mode ?? 'N/D')}</TableCell></TableRow>
+                <TableRow><TableCell>Moda</TableCell><TableCell className="text-right">{Array.isArray(stats.mode) ? stats.mode.map(m => typeof m === 'number' ? `$${m.toFixed(2)}` : m).join(', ') : (stats.mode !== null && typeof stats.mode === 'number' ? `$${stats.mode.toFixed(2)}` : (stats.mode ?? 'N/D'))}</TableCell></TableRow>
                 <TableRow><TableCell>Desv. Estándar</TableCell><TableCell className="text-right">${stats.stdDev.toFixed(2)}</TableCell></TableRow>
                 <TableRow><TableCell>Varianza</TableCell><TableCell className="text-right">${stats.variance.toFixed(2)}</TableCell></TableRow>
                 <TableRow><TableCell>Mín</TableCell><TableCell className="text-right">${stats.min.toFixed(2)}</TableCell></TableRow>
@@ -103,14 +104,37 @@ export default function DescriptiveStatsCard({ data }: DescriptiveStatsCardProps
               </BarChart>
             </ResponsiveContainer>
           </div>
+           <p className="text-xs text-muted-foreground text-center mt-2">
+             Este histograma muestra la frecuencia de los costos de reparación agrupados en diferentes rangos (bins). Cada barra representa un rango de costos y su altura indica cuántos defectos cayeron dentro de ese rango.
+           </p>
            <p className="text-xs text-muted-foreground text-center mt-1">Nota: La visualización de diagrama de caja para el Costo de Reparación se representa numéricamente (Q1, Mediana, Q3, Mín, Máx) arriba.</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <FrequencyChart title="Tipos de Defecto" data={formatFrequencyDataForChart(defectTypeFreq)} icon={<ListChecks className="mr-2 h-5 w-5 text-accent" />} />
-          <FrequencyChart title="Niveles de Severidad" data={formatFrequencyDataForChart(severityFreq)} icon={<LPieChart className="mr-2 h-5 w-5 text-accent" />} />
-          <FrequencyChart title="Ubicaciones de Defectos" data={formatFrequencyDataForChart(locationFreq)} icon={<LLineChart className="mr-2 h-5 w-5 text-accent" />} />
-          <FrequencyChart title="Métodos de Inspección" data={formatFrequencyDataForChart(inspectionFreq)} icon={<LBarChart className="mr-2 h-5 w-5 text-accent" />} />
+          <FrequencyChart 
+            title="Tipos de Defecto" 
+            data={formatFrequencyDataForChart(defectTypeFreq)} 
+            icon={<ListChecks className="mr-2 h-5 w-5 text-accent" />}
+            explanation="Este gráfico de barras muestra los tipos de defectos más comunes encontrados en los datos, ordenados por su frecuencia de aparición (los 10 principales)."
+          />
+          <FrequencyChart 
+            title="Niveles de Severidad" 
+            data={formatFrequencyDataForChart(severityFreq)} 
+            icon={<LPieChart className="mr-2 h-5 w-5 text-accent" />}
+            explanation="Este gráfico de barras muestra la distribución de los defectos según su nivel de severidad, indicando cuántos defectos corresponden a cada categoría de severidad (los 10 principales)."
+          />
+          <FrequencyChart 
+            title="Ubicaciones de Defectos" 
+            data={formatFrequencyDataForChart(locationFreq)} 
+            icon={<LLineChart className="mr-2 h-5 w-5 text-accent" />}
+            explanation="Este gráfico de barras visualiza las ubicaciones donde los defectos ocurren con mayor frecuencia, ayudando a identificar áreas problemáticas (las 10 principales)."
+          />
+          <FrequencyChart 
+            title="Métodos de Inspección" 
+            data={formatFrequencyDataForChart(inspectionFreq)} 
+            icon={<LBarChart className="mr-2 h-5 w-5 text-accent" />}
+            explanation="Este gráfico de barras indica la frecuencia con la que se utilizó cada método de inspección o la cantidad de defectos detectados por cada método (los 10 principales)."
+          />
         </div>
       </CardContent>
     </Card>
@@ -121,27 +145,32 @@ interface FrequencyChartProps {
   title: string;
   data: { name: string; count: number }[];
   icon?: React.ReactNode;
+  explanation?: string;
 }
 
-function FrequencyChart({ title, data, icon }: FrequencyChartProps) {
+function FrequencyChart({ title, data, icon, explanation }: FrequencyChartProps) {
   return (
     <div>
       <h3 className="text-lg font-semibold mb-2 flex items-center text-foreground">
         {icon}{title} (Top 10)
       </h3>
       {data.length > 0 ? (
-        <div className="h-[250px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 50, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis type="number" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
-              <YAxis dataKey="name" type="category" width={100} stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10, width: 95 }} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} />
-              <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'hsla(var(--accent), 0.1)' }} />
-              <Bar dataKey="count" fill="hsl(var(--accent))" name="Frecuencia" barSize={20}/>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <>
+          <div className="h-[250px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 50, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis type="number" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10 }} />
+                <YAxis dataKey="name" type="category" width={100} stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 10, width: 95 }} style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} />
+                <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'hsla(var(--accent), 0.1)' }} />
+                <Bar dataKey="count" fill="hsl(var(--accent))" name="Frecuencia" barSize={20}/>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          {explanation && <p className="text-xs text-muted-foreground mt-2">{explanation}</p>}
+        </>
       ) : <p className="text-muted-foreground text-sm">No hay datos para {title}.</p>}
     </div>
   );
 }
+

@@ -34,6 +34,7 @@ const defectReductionStrategiesPrompt = ai.definePrompt({
   Basándote en el análisis estadístico proporcionado, sugiere posibles estrategias de reducción de defectos y mejoras en los procesos.
   Análisis Estadístico: {{{statisticalAnalysis}}}
   Proporciona sugerencias claras y accionables para reducir los costos de fabricación y mejorar la calidad del producto.
+  IMPORTANTE: Todas tus respuestas deben ser exclusivamente en español.
 `,
 });
 
@@ -48,3 +49,4 @@ const defectReductionStrategiesFlow = ai.defineFlow(
     return output!;
   }
 );
+

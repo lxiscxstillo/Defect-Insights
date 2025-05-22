@@ -24,7 +24,7 @@ interface MonteCarloCardProps {
   data: DefectRecord[];
 }
 
-const NUM_SIMULATIONS = 10000; // As per requirement
+const NUM_SIMULATIONS = 10000; 
 
 const reductionScenarios = [0, 0.1, 0.2, 0.3]; // 0%, 10%, 20%, 30% reduction
 
@@ -33,13 +33,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     const scenarioData = payload[0].payload; // Full data object for the bar
     return (
       <div className="bg-card p-2 border border-border rounded shadow-lg text-sm">
-        <p className="font-semibold">{scenarioData.scenario}</p>
-        <p>Costo Medio: ${scenarioData.meanCost?.toFixed(2)}</p>
+        <p className="font-semibold">{scenarioData.name}</p> {/* Changed from scenarioData.scenario to scenarioData.name to match chart dataKey */}
+        <p>Costo Medio: ${scenarioData['Costo Total Medio']?.toFixed(2) ?? scenarioData.meanCost?.toFixed(2)}</p>
         <p>Desv. Est.: ${scenarioData.stdDevCost?.toFixed(2)}</p>
         <p>Costo P5: ${scenarioData.percentiles?.p5.toFixed(2)}</p>
         <p>Costo Mediana: ${scenarioData.percentiles?.p50.toFixed(2)}</p>
         <p>Costo P95: ${scenarioData.percentiles?.p95.toFixed(2)}</p>
-        {typeof scenarioData.expectedSavings === 'number' && <p>Ahorros: ${scenarioData.expectedSavings.toFixed(2)}</p>}
+        {typeof scenarioData['Ahorros Esperados'] === 'number' && <p>Ahorros: ${scenarioData['Ahorros Esperados'].toFixed(2)}</p>}
+        {typeof scenarioData.expectedSavings === 'number' && typeof scenarioData['Ahorros Esperados'] === 'undefined' && <p>Ahorros: ${scenarioData.expectedSavings.toFixed(2)}</p>}
       </div>
     );
   }
@@ -51,12 +52,10 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
   const [simulationResults, setSimulationResults] = useState<MonteCarloResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [formattedNumSimulations, setFormattedNumSimulations] = useState<string | number>(NUM_SIMULATIONS);
+  const [formattedNumSimulations, setFormattedNumSimulations] = useState<string | number>(NUM_SIMULATIONS.toString());
   const { toast } = useToast();
 
   useEffect(() => {
-    // This will only run on the client, after initial hydration
-    // Attempt to format with Spanish locale if available, otherwise default.
     try {
         setFormattedNumSimulations(NUM_SIMULATIONS.toLocaleString('es-ES'));
     } catch (e) {
@@ -84,7 +83,6 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
     const totalSteps = reductionScenarios.length * NUM_SIMULATIONS;
     let currentStep = 0;
 
-    // Simulate in chunks to update progress and avoid freezing browser
     for (const reduction of reductionScenarios) {
       const numDefectsToSample = Math.floor(repairCosts.length * (1 - reduction));
       const scenarioTotalCosts: number[] = [];
@@ -98,32 +96,32 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
         scenarioTotalCosts.push(currentTotalCost);
         
         currentStep++;
-        if (i % (NUM_SIMULATIONS / 100) === 0) { // Update progress roughly every 1% of this scenario
+        if (i % (NUM_SIMULATIONS / 100) === 0) { 
             setProgress(Math.round((currentStep / totalSteps) * 100));
-            await new Promise(resolve => setTimeout(resolve, 0)); // Yield to browser
+            await new Promise(resolve => setTimeout(resolve, 0)); 
         }
       }
       
       scenarioTotalCosts.sort((a, b) => a - b);
       const meanCost = scenarioTotalCosts.reduce((sum, cost) => sum + cost, 0) / NUM_SIMULATIONS;
-      const stdDevCost = Math.sqrt(scenarioTotalCosts.reduce((sum, cost) => sum + Math.pow(cost - meanCost, 2), 0) / (NUM_SIMULATIONS -1));
+      const variance = scenarioTotalCosts.reduce((sum, cost) => sum + Math.pow(cost - meanCost, 2), 0) / (NUM_SIMULATIONS > 1 ? (NUM_SIMULATIONS -1) : 1);
+      const stdDevCost = Math.sqrt(variance);
       
       results.push({
         scenario: `${reduction * 100}% Reducción`,
-        totalCosts: scenarioTotalCosts, // Storing all costs might be memory intensive for UI. Consider sampling for boxplot.
+        totalCosts: scenarioTotalCosts, 
         meanCost,
         stdDevCost,
         percentiles: {
-          p5: scenarioTotalCosts[Math.floor(NUM_SIMULATIONS * 0.05)],
-          p50: scenarioTotalCosts[Math.floor(NUM_SIMULATIONS * 0.50)],
-          p95: scenarioTotalCosts[Math.floor(NUM_SIMULATIONS * 0.95)],
+          p5: scenarioTotalCosts[Math.floor(NUM_SIMULATIONS * 0.05)] ?? 0,
+          p50: scenarioTotalCosts[Math.floor(NUM_SIMULATIONS * 0.50)] ?? 0,
+          p95: scenarioTotalCosts[Math.floor(NUM_SIMULATIONS * 0.95)] ?? 0,
         },
       });
     }
     
-    // Calculate expected savings based on 0% reduction scenario
     const baselineMeanCost = results.find(r => r.scenario === "0% Reducción")?.meanCost;
-    if (baselineMeanCost) {
+    if (typeof baselineMeanCost === 'number') {
       results.forEach(r => {
         if (r.scenario !== "0% Reducción") {
           r.expectedSavings = baselineMeanCost - r.meanCost;
@@ -140,20 +138,24 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
     });
   };
   
-  // Data for comparative bar chart (Mean Costs)
   const chartDataMean = simulationResults.map(r => ({
     name: r.scenario,
     "Costo Total Medio": r.meanCost,
-    ...r // Pass full data for tooltip
+    meanCost: r.meanCost, // Keep original for tooltip if needed
+    stdDevCost: r.stdDevCost,
+    percentiles: r.percentiles,
+    expectedSavings: r.expectedSavings,
   }));
 
-  // Data for comparative bar chart (Expected Savings)
   const chartDataSavings = simulationResults
     .filter(r => typeof r.expectedSavings === 'number')
     .map(r => ({
       name: r.scenario,
       "Ahorros Esperados": r.expectedSavings,
-      ...r // Pass full data for tooltip
+      meanCost: r.meanCost,
+      stdDevCost: r.stdDevCost,
+      percentiles: r.percentiles,
+      expectedSavings: r.expectedSavings,
     }));
 
 
@@ -209,7 +211,7 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
               <p className="text-xs text-muted-foreground mt-2 flex items-center">
                 <HelpCircle className="h-3 w-3 mr-1" /> 
                 Los diagramas de caja comparativos se representan mediante datos percentiles (P5, Mediana, P95).
-                Los datos de distribución completa (10,000 puntos por escenario) están disponibles pero no se grafican directamente por rendimiento.
+                Los datos de distribución completa ({formattedNumSimulations} puntos por escenario) están disponibles pero no se grafican directamente por rendimiento.
               </p>
             </div>
             
@@ -228,6 +230,9 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Este gráfico de barras compara el costo total medio de reparación estimado para cada escenario de reducción de defectos. Un costo menor indica un mayor ahorro potencial. Cada barra representa un escenario diferente (ej. 0% reducción, 10% reducción, etc.).
+                </p>
               </div>
             )}
 
@@ -246,6 +251,9 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Este gráfico de barras muestra los ahorros esperados en los costos totales de reparación para cada escenario de reducción de defectos, en comparación con el escenario base (0% de reducción). Barras más altas indican mayores ahorros.
+                </p>
               </div>
             )}
 
@@ -255,3 +263,4 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
     </Card>
   );
 }
+
