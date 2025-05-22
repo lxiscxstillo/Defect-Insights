@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -50,7 +51,13 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
   const [simulationResults, setSimulationResults] = useState<MonteCarloResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [formattedNumSimulations, setFormattedNumSimulations] = useState<string | number>(NUM_SIMULATIONS);
   const { toast } = useToast();
+
+  useEffect(() => {
+    // This will only run on the client, after initial hydration
+    setFormattedNumSimulations(NUM_SIMULATIONS.toLocaleString());
+  }, []);
 
   const repairCosts = useMemo(() => data.map(d => d.repair_cost), [data]);
 
@@ -151,7 +158,7 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
         <CardTitle className="flex items-center"><Activity className="mr-2 h-6 w-6 text-primary" />Monte Carlo Simulation</CardTitle>
         <CardDescription>
           Simulate total repair costs under different defect reduction scenarios (0%, 10%, 20%, 30%). 
-          Each scenario runs {NUM_SIMULATIONS.toLocaleString()} simulations.
+          Each scenario runs {formattedNumSimulations} simulations.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -243,3 +250,4 @@ export default function MonteCarloCard({ data }: MonteCarloCardProps) {
     </Card>
   );
 }
+
